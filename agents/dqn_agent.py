@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 from util import ReplayBuffer
 from nn.nn_layer import DQN
+from modify.dqn_action import action_modify
 
 
 class DQNAgent:
@@ -28,7 +29,7 @@ class DQNAgent:
             self.policy_net.cuda()
             self.target_net.cuda()
 
-        self.optimizer = optim.RMSprop(self.policy_net.parameters())
+        self.optimizer = optim.Adam(self.policy_net.parameters())
         self.criterion = nn.SmoothL1Loss()
         self.memory_buffer = ReplayBuffer(max_memory)
         self.steps_done = 0
@@ -36,7 +37,7 @@ class DQNAgent:
         self.batch_size = batch_size
         self.gamma = gamma
 
-    def select_action(self, state):
+    def select_action(self, state, obs):
         sample = random.random()
         eps_start = 0.9
         eps_end = 0.0
@@ -53,13 +54,13 @@ class DQNAgent:
             with torch.no_grad():
                 action_list = self.policy_net(state)
                 action = action_list.max(1)[1].view(1, 1)
-                # if 8 < action < 13:
-                #     print('epsilon:{}, action num choose: {}'.format(eps_threshold, action))
-                return action
+                modify_action = action_modify(obs, action)
+                return modify_action
         else:
             greedy_action = torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)
             # print('epsilon:{}, greedy_action'.format(eps_threshold, greedy_action))
-            return greedy_action
+            modify_action = action_modify(obs, greedy_action)
+            return modify_action
 
     def optimize_model(self):
         # collect enough experience data

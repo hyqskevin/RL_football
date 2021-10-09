@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 # @Author  : kevin_w
 
+import gc
+import os
 import argparse
 import torch
 import gfootball.env as gf
-from modified_rewards.dqn_reward import reward_func
+from modify.dqn_reward import reward_func
 from itertools import count
 from agents.dqn_agent import DQNAgent
-from util import trans_img
+from util import trans_img, plot_training
 
 
 def make_env():
     env = gf.create_environment(
-        env_name='11_vs_11_stochastic',
+        env_name='academy_corner',
         stacked=False,
         representation='raw',
         rewards='scoring',
@@ -31,7 +33,7 @@ def make_env():
     return env
 
 
-def train():
+def train(path):
 
     env = make_env()
     num_actions = env.action_space.n
@@ -67,6 +69,7 @@ def train():
         obs = env.reset()
         image = trans_img(obs[0]['frame'])
         state = torch.FloatTensor([image])
+        next_obs = obs
 
         if torch.cuda.is_available():
             state = state.cuda()
@@ -74,7 +77,7 @@ def train():
         eps_reward = 0
         for t in count():
             # get next_state, reward
-            action = agent.select_action(state)
+            action = agent.select_action(state, next_obs)
             next_obs, reward, done, _ = env.step(action.item())
             next_img = trans_img(next_obs[0]['frame'])
             next_state = torch.FloatTensor([next_img])
@@ -97,10 +100,22 @@ def train():
                 state = next_state
             else:
                 state = None
-            if done:
+            if done or t > 800:
                 break
 
         reward_list.append(eps_reward)
+        # plot training rewards
+        plot_training(reward_list, path)
+
+        # save model
+        if eps % 200 == 0 and eps > 0:
+            # model_path = './dqn/' + str(eps) + '/'
+            # os.makedirs(model_path, exist_ok=True)
+            policy_path = './' + str(eps) + 'dqn_policy_net.pkl'
+            target_path = './' + str(eps) + 'dqn_target_net.pkl'
+            torch.save(agent.policy_net.state_dict(), policy_path)
+            torch.save(agent.target_net.state_dict(), target_path)
+
         print('episode {}: last time {}, reward {}'.format(
             eps, t, eps_reward
         ))
@@ -120,7 +135,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.01, metavar='lr')
     parser.add_argument('--gamma', type=float, default=0.9, metavar='gamma')
     parser.add_argument('--epsilon', type=float, default=0.99, metavar='epsilon')
-    parser.add_argument('--batch_size', type=int, default=64, metavar='batch')
+    parser.add_argument('--batch_size', type=int, default=32, metavar='batch')
     parser.add_argument('--max_memory', type=int, default=10000, metavar='max memory')
     parser.add_argument('--episodes', type=int, default=5000, metavar='episodes')
     parser.add_argument('--update_interval', type=int, default=100, metavar='target update',
@@ -129,4 +144,8 @@ if __name__ == '__main__':
                         help='interval between training status logs (default: 10)')
 
     args = parser.parse_args()
-    train()
+
+    PATH = './dqn/DQN_plot/'
+    os.makedirs(PATH, exist_ok=True)
+    gc.collect()
+    train(PATH)

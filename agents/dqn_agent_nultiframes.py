@@ -28,7 +28,7 @@ class DQNAgent:
             self.policy_net.cuda()
             self.target_net.cuda()
 
-        self.optimizer = optim.RMSprop(self.policy_net.parameters())
+        self.optimizer = optim.Adam(self.policy_net.parameters())
         self.criterion = nn.SmoothL1Loss()
         self.memory_buffer = ReplayBuffer(max_memory)
         self.steps_done = 0
