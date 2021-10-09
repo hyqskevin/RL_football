@@ -4,7 +4,7 @@
 import argparse
 import torch
 import gfootball.env as gf
-from modified_rewards.dqn_reward import reward_func
+from modify.dqn_reward import reward_func
 from itertools import count
 from agents.dqn_agent_nultiframes import DQNAgent
 from util import trans_img

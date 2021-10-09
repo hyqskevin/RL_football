@@ -27,7 +27,7 @@ Scenario name
 representation
 simple115, pixels, pixels_gray, extracted
 
-modified_rewards
+modify
 scoring, checkpoints
 """
 

@@ -6,28 +6,7 @@ import cv2
 import numpy as np
 import random
 from collections import namedtuple, deque
-
-
-# resize and transpose observation
-class TransEnv(gym.ObservationWrapper):
-    def __init__(self, env):
-        gym.ObservationWrapper.__init__(self, env)
-        self.height = 72
-        self.width = 128
-        self.channel = 3
-        self.observation_space = gym.spaces.Box(
-            low=0,
-            high=255,
-            shape=(self.channel, self.height, self.width),
-            dtype=np.uint8
-        )
-
-    def observation(self, observation):
-        obs = cv2.resize(observation,
-                         (self.width, self.height),
-                         interpolation=cv2.INTER_AREA
-                         )
-        return obs.reshape(self.observation_space.low.shape)
+import matplotlib.pyplot as plt
 
 
 # get raw observatios
@@ -69,6 +48,7 @@ class GetRawObservations:
         self.ball_position = obs[0]['ball']
         self.ball_owned_player = obs[0]['ball_owned_player']
         self.ball_direction = obs[0]['ball_direction']
+        self.left_team_direction = obs[0]['left_team_direction']
         self.left_team_position = obs[0]['left_team']
         self.right_team_position = obs[0]['right_team']
         self.designated_player = obs[0]['designated']
@@ -78,6 +58,9 @@ class GetRawObservations:
 
     def get_team_position(self):
         return self.left_team_position, self.right_team_position
+
+    def get_team_direction(self):
+        return self.left_team_direction
 
     def get_player(self):
         return self.designated_player
@@ -112,3 +95,44 @@ def trans_img(image):
     image = image.transpose(2, 0, 1)
     image = np.ascontiguousarray(image, dtype=np.float32) / 255
     return image
+
+
+# resize and transpose observation
+class TransEnv(gym.ObservationWrapper):
+    def __init__(self, env):
+        gym.ObservationWrapper.__init__(self, env)
+        self.height = 72
+        self.width = 128
+        self.channel = 3
+        self.observation_space = gym.spaces.Box(
+            low=0,
+            high=255,
+            shape=(self.channel, self.height, self.width),
+            dtype=np.uint8
+        )
+
+    def observation(self, observation):
+        obs = cv2.resize(observation,
+                         (self.width, self.height),
+                         interpolation=cv2.INTER_AREA
+                         )
+        return obs.reshape(self.observation_space.low.shape)
+
+
+# plot rewards
+def plot_training(rewards, path):
+    plt.figure(figsize=(8, 6))
+    ax = plt.subplot(111)
+    ax.cla()
+    ax.grid()
+    ax.set_title('Training')
+    ax.set_xlabel('Episode')
+    ax.set_ylabel('Run Time')
+    ax.plot(rewards)
+    run_time = len(rewards)
+
+    # path = './AC_CartPole-v0/' + str(RunTime) + '.jpg'
+    path = path + str(run_time) + '.jpg'
+    if run_time % 100 == 0:
+        plt.savefig(path)
+    plt.pause(0.000001)

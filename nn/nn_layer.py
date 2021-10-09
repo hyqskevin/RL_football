@@ -18,11 +18,11 @@ class DQN(nn.Module):
         num_actor_features = self.actor_model.fc.in_features
         self.actor_model.fc = nn.Linear(num_actor_features, num_classes)
         # self.actor_model.conv1 = nn.Conv2d(4, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        # self.action_output = nn.Softmax(dim=1)
+        self.action_output = nn.Softmax(dim=1)
 
     def forward(self, x):
         action = self.actor_model(x)
-        # action = self.action_output(action)
+        action = self.action_output(action)
         return action
 
 
@@ -31,7 +31,7 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
 
         # actor
-        self.actor_model = models.resnet18(pretrained=False)
+        self.actor_model = models.resnet50(pretrained=False)
 
         for param in self.actor_model.parameters():
             param.requires_grad = False
@@ -41,7 +41,7 @@ class ActorCritic(nn.Module):
         self.action_output = nn.Softmax(dim=1)
 
         # critic
-        self.critic_model = models.resnet18(pretrained=False)
+        self.critic_model = models.resnet50(pretrained=False)
 
         for param in self.critic_model.parameters():
             param.requires_grad = False
