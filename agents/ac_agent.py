@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
 from nn.nn_layer import ActorCritic
-from modify.ac_action import action_modify
+from modify.ac_modify import action_modify
 
 
 class ActorCriticAgent:
@@ -30,15 +30,21 @@ class ActorCriticAgent:
         self.gamma = gamma
         self.rewards = []
         self.actions = []
+        # TODO
+        # add tensorboardX
 
-    def select_action(self, state, obs):
-        prob, state_value = self.net(state)
+    def select_action(self, state, obs, epo):
+
+        with torch.no_grad():
+            prob, state_value = self.net(state)
 
         c = Categorical(prob)
         sample_action = c.sample()
 
-        # manual modify the action
-        sample_action = action_modify(obs, sample_action)
+        # manual modify the action in 100 episodes
+        # then agent fully control the decision
+        if epo < 100:
+            sample_action = action_modify(obs, sample_action)
 
         if torch.cuda.is_available():
             sample_action = sample_action.cuda()
@@ -49,13 +55,6 @@ class ActorCriticAgent:
             state_value))
 
         return sample_action
-
-        # action = prob.max(1)[1].view(1, 1)
-        # # print(action)
-        # self.actions.append(self.ActionTuple(
-        #     math.log(action),
-        #     state_value))
-        # return action
 
     def loss_function(self):
         R = 0

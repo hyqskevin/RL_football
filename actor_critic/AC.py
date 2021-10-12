@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # @Author  : kevin_w
 
+import gc
 import os
 import math
 import argparse
 import torch
 import gfootball.env as gf
-from modify.ac_reward import reward_func
+from modify.ac_modify import reward_func
 from itertools import count
 from agents.ac_agent import ActorCriticAgent
 from util import trans_img, plot_training
@@ -51,6 +52,7 @@ def train(path):
         obs = env.reset()
         image = trans_img(obs[0]['frame'])
         state = torch.FloatTensor([image])
+        next_obs = obs
 
         if torch.cuda.is_available():
             state = state.cuda()
@@ -58,7 +60,7 @@ def train(path):
         eps_reward = 0
         for t in count():
             # get next_state, reward
-            action = agent.select_action(state, obs)
+            action = agent.select_action(state, next_obs, eps)
             next_obs, score, done, _ = env.step(action.item())
             next_img = trans_img(next_obs[0]['frame'])
             next_state = torch.FloatTensor([next_img])
@@ -84,7 +86,7 @@ def train(path):
                 state = next_state
             else:
                 state = None
-            if done or t > 800:
+            if done or t > 1500:
                 break
 
         reward_list.append(eps_reward)
@@ -114,10 +116,10 @@ def train(path):
 
 if __name__ == '__main__':
     # define parameter
-    parser = argparse.ArgumentParser(description="DQN example")
+    parser = argparse.ArgumentParser(description="Actor Critic example")
     parser.add_argument('--seed', type=int, default=1024, metavar='seed')
     parser.add_argument('--learning_rate', type=float, default=0.01, metavar='lr')
-    parser.add_argument('--gamma', type=float, default=0.9, metavar='gamma')
+    parser.add_argument('--gamma', type=float, default=0.8, metavar='gamma')
     parser.add_argument('--batch_size', type=int, default=128, metavar='batch')
     parser.add_argument('--episodes', type=int, default=5000, metavar='episodes')
     parser.add_argument('--log_interval', type=int, default=10, metavar='N',
@@ -125,6 +127,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    gc.collect()
     PATH = './AC_plot/'
     os.makedirs(PATH, exist_ok=True)
     train(PATH)
