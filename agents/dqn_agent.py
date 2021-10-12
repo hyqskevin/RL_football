@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 from util import ReplayBuffer
 from nn.nn_layer import DQN
-from modify.dqn_action import action_modify
+from modify.dqn_modify import action_modify
 
 
 class DQNAgent:
@@ -37,7 +37,7 @@ class DQNAgent:
         self.batch_size = batch_size
         self.gamma = gamma
 
-    def select_action(self, state, obs):
+    def select_action(self, state, obs, episode):
         sample = random.random()
         eps_start = 0.9
         eps_end = 0.0
@@ -54,7 +54,12 @@ class DQNAgent:
             with torch.no_grad():
                 action_list = self.policy_net(state)
                 action = action_list.max(1)[1].view(1, 1)
-                modify_action = action_modify(obs, action)
+
+                # manual modify the action in 100 episodes
+                # then agent fully control the decision
+                if episode < 100:
+                    modify_action = action_modify(obs, action)
+
                 return modify_action
         else:
             greedy_action = torch.tensor([[random.randrange(self.num_actions)]], dtype=torch.long)

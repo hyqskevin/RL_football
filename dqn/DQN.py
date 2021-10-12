@@ -6,7 +6,7 @@ import os
 import argparse
 import torch
 import gfootball.env as gf
-from modify.dqn_reward import reward_func
+from modify.dqn_modify import reward_func
 from itertools import count
 from agents.dqn_agent import DQNAgent
 from util import trans_img, plot_training
@@ -14,7 +14,7 @@ from util import trans_img, plot_training
 
 def make_env():
     env = gf.create_environment(
-        env_name='academy_corner',
+        env_name='11_vs_11_easy_stochastic',
         stacked=False,
         representation='raw',
         rewards='scoring',
@@ -77,7 +77,7 @@ def train(path):
         eps_reward = 0
         for t in count():
             # get next_state, reward
-            action = agent.select_action(state, next_obs)
+            action = agent.select_action(state, next_obs, eps)
             next_obs, reward, done, _ = env.step(action.item())
             next_img = trans_img(next_obs[0]['frame'])
             next_state = torch.FloatTensor([next_img])
@@ -93,6 +93,7 @@ def train(path):
             # Store the transition in memory and update agent
             agent.memory_buffer.push(state, action, reward, next_state)
             agent.optimize_model()
+
             if reward > 0:
                 print('in step{}: action:{}, reward:{}'.format(t, action, reward))
 
@@ -100,7 +101,7 @@ def train(path):
                 state = next_state
             else:
                 state = None
-            if done or t > 800:
+            if done or t > 1500:
                 break
 
         reward_list.append(eps_reward)
@@ -133,7 +134,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="DQN example")
     parser.add_argument('--seed', type=int, default=1024, metavar='seed')
     parser.add_argument('--learning_rate', type=float, default=0.01, metavar='lr')
-    parser.add_argument('--gamma', type=float, default=0.9, metavar='gamma')
+    parser.add_argument('--gamma', type=float, default=0.6, metavar='gamma')
     parser.add_argument('--epsilon', type=float, default=0.99, metavar='epsilon')
     parser.add_argument('--batch_size', type=int, default=32, metavar='batch')
     parser.add_argument('--max_memory', type=int, default=10000, metavar='max memory')
