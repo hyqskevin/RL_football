@@ -134,7 +134,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="DQN example")
     parser.add_argument('--seed', type=int, default=1024, metavar='seed')
     parser.add_argument('--learning_rate', type=float, default=0.01, metavar='lr')
-    parser.add_argument('--gamma', type=float, default=0.6, metavar='gamma')
+    parser.add_argument('--gamma', type=float, default=0.8, metavar='gamma')
     parser.add_argument('--epsilon', type=float, default=0.99, metavar='epsilon')
     parser.add_argument('--batch_size', type=int, default=32, metavar='batch')
     parser.add_argument('--max_memory', type=int, default=10000, metavar='max memory')

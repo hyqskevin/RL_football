@@ -72,7 +72,7 @@ def collect_action(action):
 
     # if repeat over 10 step
     # modify will trigger to prevent fall into local minimum
-    if action_count >= 10:
+    if action_count >= 20:
         action_count = 0
         last_action = action
         return action, True

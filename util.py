@@ -4,6 +4,8 @@
 import gym
 import cv2
 import numpy as np
+import pandas as pd
+import openpyxl
 import random
 from collections import namedtuple, deque
 import matplotlib.pyplot as plt
@@ -45,8 +47,8 @@ class TransEnv(gym.ObservationWrapper):
     def __init__(self, env):
         gym.ObservationWrapper.__init__(self, env)
         self.height = 72
-        self.width = 128
-        self.channel = 3
+        self.width = 96
+        self.channel = 4
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
@@ -79,3 +81,9 @@ def plot_training(rewards, path):
     if run_time % 100 == 0:
         plt.savefig(path)
     plt.pause(0.000001)
+
+
+# save to local excel
+def save_data(data, column_name, path):
+    df = pd.DataFrame(data, columns=[column_name])
+    df.to_excel(path, index=False)

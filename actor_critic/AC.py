@@ -7,10 +7,11 @@ import math
 import argparse
 import torch
 import gfootball.env as gf
+from tensorboardX import SummaryWriter
 from modify.ac_modify import reward_func
 from itertools import count
 from agents.ac_agent import ActorCriticAgent
-from util import trans_img, plot_training
+from util import trans_img, plot_training, save_data
 
 
 def make_env():
@@ -39,6 +40,7 @@ def train(path):
     env = make_env()
     num_actions = env.action_space.n
     agent = ActorCriticAgent(num_actions)
+    writer = SummaryWriter(args.log_path)
     reward_list = []
 
     if torch.cuda.is_available():
@@ -86,14 +88,21 @@ def train(path):
                 state = next_state
             else:
                 state = None
-            if done or t > 1500:
+            if done or t > 1000:
                 break
 
         reward_list.append(eps_reward)
-        agent.optimize_model(t)
+        loss = agent.optimize_model(t)
 
         # plot training rewards
         plot_training(reward_list, path)
+
+        # save reward list
+        save_data(reward_list, 'ac_reward', 'ac_reward.xlsx')
+
+        # save loss in tensorboardx
+        writer.add_scalar('Train/Loss', loss.cpu(), eps)
+        writer.add_scalar('Train/Reward', eps_reward, eps)
 
         # save model
         if eps % 200 == 0 and eps > 0:
@@ -120,14 +129,15 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=1024, metavar='seed')
     parser.add_argument('--learning_rate', type=float, default=0.01, metavar='lr')
     parser.add_argument('--gamma', type=float, default=0.8, metavar='gamma')
-    parser.add_argument('--batch_size', type=int, default=128, metavar='batch')
+    parser.add_argument('--batch_size', type=int, default=64, metavar='batch')
     parser.add_argument('--episodes', type=int, default=5000, metavar='episodes')
+    parser.add_argument("--log_path", type=str, default="AC_tensorboard")
     parser.add_argument('--log_interval', type=int, default=10, metavar='N',
                         help='interval between training status logs (default: 10)')
 
     args = parser.parse_args()
 
     gc.collect()
-    PATH = './AC_plot/'
+    PATH = 'AC_plot/'
     os.makedirs(PATH, exist_ok=True)
     train(PATH)

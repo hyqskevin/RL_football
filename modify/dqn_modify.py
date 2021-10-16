@@ -10,7 +10,8 @@ from modify.util import collect_action, GetRawObservations
 ball_pos = [0, 0, 0]
 player_pos = [0, 0, 0]
 last_team = 0
-last_dist = 0
+last_dist_to_ball = 0
+last_dist_to_goal = 0
 e = np.finfo(np.float32).eps.item()
 
 
@@ -19,6 +20,11 @@ def action_modify(obs, action):
     team, pos, ball_direction, player = get_obs.get_ball_info()
     left_team, right_team = get_obs.get_team_position()
     active_player = left_team[get_obs.get_player()]
+
+    # modify it if the agent repeat one single action to prevent local minimum
+    # dribble the ball for a long time
+    # pass the ball to each other for a long time
+    # take a shoot in a long distance to the goal
 
     a, is_in_local_min = collect_action(action.item())
     if (team == 0) and (0 <= a <= 8) and \
@@ -51,7 +57,8 @@ def action_modify(obs, action):
 def reward_func(obs, score, action):
     global ball_pos
     global last_team
-    global last_dist
+    global last_dist_to_ball
+    global last_dist_to_goal
     global player_pos
     global e
     get_obs = GetRawObservations(obs)
@@ -82,9 +89,9 @@ def reward_func(obs, score, action):
         print('outside punishment')
 
     # run to the ball and get control
-    # distance = math.sqrt((pos[0] - active_player[0])**2 + (pos[1] - active_player[1])**2)
-    # if (last_team != 0) and (distance-last_dist > 0.01):
-    #     reward -= 0.1
+    distance_to_ball = math.sqrt((pos[0] - active_player[0])**2 + (pos[1] - active_player[1])**2)
+    if (last_team != 0) and (distance-last_dist_to_ball > 0.01):
+        reward -= 0.1
 
     # action limit
     if (team != 0) and (9 <= action <= 11):
@@ -112,11 +119,11 @@ def reward_func(obs, score, action):
         print('shoot opportunity')
 
     # offense
+    distance = math.sqrt((active_player[0] - 1) ** 2 + (active_player[1] - 0) ** 2)
     if pos[1] > 0:
         if (team == 0) and ((pos[0] - ball_pos[0]) > 0) and \
                 ((ball_pos[1] - pos[1]) > 0) and (active_player[0] > -0.7):
-            distance = math.sqrt((active_player[0] - 1) ** 2 + (active_player[1] - 0) ** 2)
-            if last_dist - distance > 0.01:
+            if last_dist_to_goal - distance > 0.01:
                 reward += (2 - distance)
                 print('move reward')
             if (active_player_direction[0] > 0.001) and \
@@ -126,8 +133,7 @@ def reward_func(obs, score, action):
     elif pos[1] < 0:
         if (team == 0) and ((pos[0] - ball_pos[0]) > 0) and \
                 ((ball_pos[1] - pos[1]) < 0) and (active_player[0] > -0.7):
-            distance = math.sqrt((active_player[0] - 1) ** 2 + (active_player[1] - 0) ** 2)
-            if last_dist - distance > 0.01:
+            if last_dist_to_goal - distance > 0.01:
                 reward += (2 - distance)
                 print('move reward')
             if (active_player_direction[0] > 0.001) and \
@@ -140,6 +146,7 @@ def reward_func(obs, score, action):
 
     # update record
     ball_pos = pos
-    last_dist = distance
+    last_dist_to_ball = distance_to_ball
+    last_dist_to_goal = distance
     player_pos = active_player
     return reward

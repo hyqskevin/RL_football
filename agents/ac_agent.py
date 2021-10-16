@@ -33,7 +33,7 @@ class ActorCriticAgent:
         # TODO
         # add tensorboardX
 
-    def select_action(self, state, obs, epo):
+    def select_action(self, state, obs, eps):
 
         with torch.no_grad():
             prob, state_value = self.net(state)
@@ -43,7 +43,7 @@ class ActorCriticAgent:
 
         # manual modify the action in 100 episodes
         # then agent fully control the decision
-        if epo < 100:
+        if eps < 100:
             sample_action = action_modify(obs, sample_action)
 
         if torch.cuda.is_available():
@@ -87,5 +87,8 @@ class ActorCriticAgent:
         policy_loss, value_loss = self.loss_function()
         self.optimizer.zero_grad()
         loss = (torch.stack(policy_loss).sum() + torch.stack(value_loss).sum()) / count
+        loss.requires_grad_(True)
         loss.backward()
         self.optimizer.step()
+
+        return loss

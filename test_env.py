@@ -2,6 +2,7 @@
 # @Author  : kevin_w
 # test the google football environment
 
+import gym
 import gfootball.env as gf
 from baselines import logger
 from itertools import count
@@ -54,18 +55,22 @@ def make_env():
 
 
 def test_env():
-    env = make_env()
-    print('observation space:', env.observation_space)
+    env = TransEnv(gym.make('GFootball-academy_empty_goal_close-SMM-v0'))
+    # env = make_env()
+    print('observation space:', env.observation_space.shape)
     print('action space:', env.action_space)
 
     env.reset()
+    obs = env.reset()
+    print(obs)
     for t in count():
+        env.render()
         action = env.action_space.sample()  # random sample one action in action space
         new_obs, reward, done, info = env.step(action)
         print('action:{}, reward:{}, info:{}'.format(action, reward, info))
         if done:
             env.reset()
-        if t >= 100:
+        if t >= 500:
             break
 
 
